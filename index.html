@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Real-Time Collaborative Text Editor</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter&display=swap');
+  body {
+    margin: 0; padding: 0; font-family: 'Inter', sans-serif;
+    background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+    color: #e0e7ff; height: 100vh; display: flex; flex-direction: column;
+  }
+  header {
+    background: rgba(12,32,46,0.85); padding: 1rem 2rem;
+    font-weight: 700; font-size: 1.5rem; box-shadow: 0 2px 10px rgba(0,0,0,0.4);
+    user-select: none; text-align: center;
+  }
+  #editor {
+    flex: 1; margin: 1rem 2rem; padding: 1.5rem;
+    border-radius: 12px; font-family: monospace; font-size: 1.125rem;
+    background: rgba(28,48,66,0.95); border: none; outline: none;
+    color: #f0f7ff; resize: none; box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+    line-height: 1.5; overflow: auto; width: auto; min-height: 0;
+  }
+  footer {
+    text-align: center; padding: 0.8rem 1rem; background: rgba(12,30,43,0.9);
+    font-size: 0.85rem; color: #94a3b8; user-select: none;
+  }
+</style>
+</head>
+<body>
+<header>Real-Time Collaborative Text Editor (React + Node.js WebSocket Demo)</header>
+<textarea id="editor" placeholder="Start typing..." spellcheck="false"></textarea>
+<footer>This is a standalone frontend demo. See README for backend setup.</footer>
+
+<script src="https://cdn.socket.io/4.6.1/socket.io.min.js" integrity="sha384-DCXEcA8sE0nGK59Mu1AzCKQNOrCG0p5A2eFytxCGHOco4mhWCuWbJ3+0mVBLRgfp" crossorigin="anonymous"></script>
+<script>
+(() => {
+  const editor = document.getElementById('editor');
+  // Connect to backend WebSocket server (change URL if needed)
+  const socket = io('http://localhost:4000');
+
+  let localChange = false;
+
+  // On receiving initial document or updates from server, update editor
+  socket.on('document', text => {
+    if (!localChange) {
+      const cursorStart = editor.selectionStart;
+      const cursorEnd = editor.selectionEnd;
+      editor.value = text;
+      editor.selectionStart = cursorStart;
+      editor.selectionEnd = cursorEnd;
+    }
+    localChange = false;
+  });
+
+  socket.on('content-change', text => {
+    if (!localChange) {
+      const cursorStart = editor.selectionStart;
+      const cursorEnd = editor.selectionEnd;
+      editor.value = text;
+      editor.selectionStart = cursorStart;
+      editor.selectionEnd = cursorEnd;
+    }
+    localChange = false;
+  });
+
+  // On local input, emit changes to server
+  editor.addEventListener('input', () => {
+    localChange = true;
+    socket.emit('content-change', editor.value);
+  });
+
+  socket.on('connect', () => {
+    console.log('Connected to server');
+  });
+
+  socket.on('disconnect', () => {
+    console.log('Disconnected from server');
+  });
+})();
+</script>
+</body>
+</html>
+
